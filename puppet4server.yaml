@@ -11,18 +11,34 @@
       - name: Install puppet yum repository
         command: rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
         when: yumrepo_check.stdout.find('is not installed') != -1
+      - name: Install epel repository
+        yum:
+            name: epel-release
+            state: installed
+      - name: Install postgres pgdg-96 repository
+        yum:
+            name: https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-{{ ansible_distribution_major_version}}-x86_64/pgdg-centos96-9.6-3.noarch.rpm
+            state: installed
+      - name: Install python-psycopg2
+        yum:
+            name: python-psycopg2
+            state: installed
       - name: Install puppetserver
         yum:
             name: puppetserver
-            state: latest
+            state: installed
       - name: Install puppetdb
         yum:
             name: puppetdb
-            state: latest
+            state: installed
       - name: Install puppet-agent
         yum:
             name: puppet-agent
-            state: latest
+            state: installed
+      - name: Install puppetdb-termini
+        yum:
+            name: puppetdb-termini
+            state: installed
       - name: Disable puppetserver (for now)
         service:
             name: puppetserver
@@ -40,12 +56,90 @@
             state: stopped
       - name: Deploy puppet.conf from template
         template:
-            src: templates/puppet.conf.template
+            src: templates/puppetserver/puppet.conf.template
             dest: /etc/puppetlabs/puppet/puppet.conf
             owner: root
             group: root
             mode: 0644
-      - name: Enable puppetserver
+      - name: Deploy puppetserver's puppetdb config from template
+        template:
+            src: templates/puppetserver/puppetdb.conf.template
+            dest: /etc/puppetlabs/puppet/puppetdb.conf
+            owner: root
+            group: root
+            mode: 0644
+      - name: Deploy puppetserver's routes.yaml from template
+        template:
+            src: templates/puppetserver/routes.yaml.template
+            dest: /etc/puppetlabs/puppet/routes.yaml
+            owner: root
+            group: root
+            mode: 0644
+      - name: Install postgresql-96
+        yum:
+            name: postgresql96-server
+            state: installed
+      - name: Install postgresql-96-contrib
+        yum:
+            name: postgresql96-contrib
+            state: installed
+      - name: Check if postgres is initialized
+        command: test -f /var/lib/pgsql/9.6/data/postgresql.conf
+        register: pginit_check
+        failed_when: pginit_check.rc > 1
+      - name: Initialize postgres
+        command: /usr/pgsql-9.6/bin/initdb -D /var/lib/pgsql/9.6/data
+        when: pginit_check.rc == 1
+        become: yes
+        become_user: postgres
+      - name: Enable/start postgresql-96
+        service:
+            name: postgresql-9.6
+            enabled: yes
+            state: started
+      - name: Create postgres DB
+        postgresql_db:
+            name: puppetdb
+      - name: Create postgres DB
+        postgresql_user:
+            db: puppetdb
+            name: puppetdb_user
+            password: supersecret
+      - name: Install pg_trgm extension
+        postgresql_ext:
+            db: puppetdb
+            name: pg_trgm
+      - name: Deploy puppetdb database.ini from template
+        template:
+            src: templates/puppetdb/database.ini.template
+            dest: /etc/puppetlabs/puppetdb/conf.d/database.ini
+            owner: root
+            group: root
+            mode: 0644
+      - name: Change puppetdb jetty listen host
+        lineinfile:
+            dest: /etc/puppetlabs/puppetdb/conf.d/jetty.ini
+            regexp: '^(#\s*)?host\s*=\s*.*'
+            line: 'host = 0.0.0.0'
+      # we can't start on port 80 unless we're root :\
+      - name: Change puppetdb jetty listen port
+        lineinfile:
+            dest: /etc/puppetlabs/puppetdb/conf.d/jetty.ini
+            regexp: '^(#\s*)?port\s*=\s*.*'
+            line: 'port = 8080'
+      - name: Check if puppetdb's SSL certs have been created
+        command: test -f /etc/puppetlabs/puppetdb/ssl/private.pem
+        register: pdbssl_check
+        failed_when: pdbssl_check.rc > 1
+      - name: Initialize puppetdb SSL certs
+        command: /opt/puppetlabs/bin/puppetdb ssl-setup
+        when: pdbssl_check.rc == 1
+      - name: Enable/Start puppetdb
+        service:
+            name: puppetdb
+            enabled: yes
+            state: started
+      - name: Enable/Start puppetserver
         service:
             name: puppetserver
             enabled: yes

@@ -11,6 +11,9 @@ rundir = /var/run/puppetlabs/puppetserver
 pidfile = /var/run/puppetlabs/puppetserver/puppetserver.pid
 codedir = /etc/puppetlabs/code
 dns_alt_names = puppet,{{ inventory_hostname }}
+storeconfigs = true
+storeconfigs_backend = puppetdb
+reports = store,puppetdb
 
 [main]
 certname = {{ inventory_hostname }}
