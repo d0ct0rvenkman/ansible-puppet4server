@@ -1,0 +1,52 @@
+---
+- name: Create Puppet 4 server
+  gather_facts: True
+  hosts: puppet4servers
+  tasks:
+      - name: Check if puppet yum repositories are installed
+        command: rpm -q puppetlabs-release-pc1
+        register: yumrepo_check
+        failed_when: yumrepo_check.rc > 1
+        changed_when: no
+      - name: Install puppet yum repository
+        command: rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+        when: yumrepo_check.stdout.find('is not installed') != -1
+      - name: Install puppetserver
+        yum:
+            name: puppetserver
+            state: latest
+      - name: Install puppetdb
+        yum:
+            name: puppetdb
+            state: latest
+      - name: Install puppet-agent
+        yum:
+            name: puppet-agent
+            state: latest
+      - name: Disable puppetserver (for now)
+        service:
+            name: puppetserver
+            enabled: no
+            state: stopped
+      - name: Disable puppetdb (for now)
+        service:
+            name: puppetdb
+            enabled: no
+            state: stopped
+      - name: Disable puppet (for now)
+        service:
+            name: puppet
+            enabled: no
+            state: stopped
+      - name: Deploy puppet.conf from template
+        template:
+            src: templates/puppet.conf.template
+            dest: /etc/puppetlabs/puppet/puppet.conf
+            owner: root
+            group: root
+            mode: 0644
+      - name: Enable puppetserver
+        service:
+            name: puppetserver
+            enabled: yes
+            state: started
