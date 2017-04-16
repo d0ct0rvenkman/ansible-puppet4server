@@ -200,6 +200,13 @@
             mode: 0600
             owner: uwsgi
             group: uwsgi
+      - name: Fix puppetboard SSL permissions (ca.pem)
+        file:
+            path: /etc/puppetlabs/puppetboard/ssl/ca.pem
+            state: file
+            mode: 0600
+            owner: uwsgi
+            group: uwsgi
       - name: Install puppetboard module
         command: pip install puppetboard
       - name: "Create puppetboard content directory"
