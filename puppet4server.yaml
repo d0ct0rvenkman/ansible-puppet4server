@@ -241,11 +241,6 @@
             owner: uwsgi
             group: uwsgi
             mode: 0644
-      - name: Enable/start uwsgi
-        service:
-            name: uwsgi
-            enabled: yes
-            state: restarted
       - name: Deploy puppetboard nginx config
         template:
             src: templates/puppetboard/nginx-nginx.conf.template
@@ -260,26 +255,7 @@
             owner: root
             group: root
             mode: 0644
-      - name: Enable/Start nginx
-        service:
-            name: nginx
-            enabled: yes
-            state: started
-      - name: Enable/Start puppetdb
-        service:
-            name: puppetdb
-            enabled: yes
-            state: started
-      - name: Enable/Start puppetserver
-        service:
-            name: puppetserver
-            enabled: yes
-            state: started
-      - name: Enable/Start puppet agent
-        service:
-            name: puppet
-            enabled: yes
-            state: started
+
       - name: Install r10k
         command: /opt/puppetlabs/puppet/bin/gem install r10k
       - name: Check if r10k is initialized
@@ -301,3 +277,32 @@
             owner: root
             group: root
             mode: 0644
+
+
+
+    ### Start Services #####################################
+      - name: Enable/start uwsgi
+        service:
+            name: uwsgi
+            enabled: yes
+            state: restarted
+      - name: Enable/Start nginx
+        service:
+            name: nginx
+            enabled: yes
+            state: started
+      - name: Enable/Start puppetdb
+        service:
+            name: puppetdb
+            enabled: yes
+            state: started
+      - name: Enable/Start puppetserver
+        service:
+            name: puppetserver
+            enabled: yes
+            state: started
+      - name: Enable/Start puppet agent
+        service:
+            name: puppet
+            enabled: yes
+            state: started
