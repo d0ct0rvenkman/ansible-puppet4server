@@ -8,6 +8,13 @@
         register: yumrepo_check
         failed_when: yumrepo_check.rc > 1
         changed_when: no
+      - name: Install epel repository
+        yum:
+            name: epel-release
+            state: installed
+      - name: Install puppet yum repository
+        command: rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+        when: yumrepo_check.stdout.find('is not installed') != -1
       - name: Install git
         yum:
             name: git
@@ -27,13 +34,6 @@
       - name: Install uwsgi-plugin-python
         yum:
             name: uwsgi-plugin-python
-            state: installed
-      - name: Install puppet yum repository
-        command: rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
-        when: yumrepo_check.stdout.find('is not installed') != -1
-      - name: Install epel repository
-        yum:
-            name: epel-release
             state: installed
       - name: Install postgres pgdg-96 repository
         yum:
@@ -161,6 +161,12 @@
         command: test -f /etc/puppetlabs/puppetdb/ssl/private.pem
         register: pdbssl_check
         failed_when: pdbssl_check.rc > 1
+      - name: Start puppetserver to generate SSL certs
+        command: service puppetserver start
+        when: pdbssl_check.rc == 1
+      - name: Stop puppetserver
+        command: service puppetserver stop
+        when: pdbssl_check.rc == 1
       - name: Initialize puppetdb SSL certs
         command: /opt/puppetlabs/bin/puppetdb ssl-setup
         when: pdbssl_check.rc == 1
