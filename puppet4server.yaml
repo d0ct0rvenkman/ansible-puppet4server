@@ -276,3 +276,5 @@
             name: puppet
             enabled: yes
             state: started
+      - name: Install r10k
+        command: /opt/puppetlabs/puppet/bin/gem install r10k
