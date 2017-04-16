@@ -242,10 +242,10 @@
             group: uwsgi
             mode: 0644
       - name: Enable/start uwsgi
-        systemd:
-            state: restarted
-            daemon_reload: yes
+        service:
             name: uwsgi
+            enabled: yes
+            state: restarted
       - name: Deploy puppetboard nginx config
         template:
             src: templates/puppetboard/nginx-nginx.conf.template
