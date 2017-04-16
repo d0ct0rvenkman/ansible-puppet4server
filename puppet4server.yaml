@@ -234,7 +234,7 @@
             owner: nginx
             group: nginx
             mode: 0644
-      - name: Deploy puppetboard systemd service file
+      - name: Deploy puppetboard uwsgi config file
         template:
             src: templates/puppetboard/uwsgi-puppetboard.yaml.template
             dest: /etc/uwsgi.d/puppetboard.yaml
@@ -282,3 +282,22 @@
             state: started
       - name: Install r10k
         command: /opt/puppetlabs/puppet/bin/gem install r10k
+      - name: Check if r10k is initialized
+        command: test -d /etc/puppetlabs/r10k
+        register: r10k_check
+        failed_when: r10k_check.rc > 1
+      - name: "Create r10k configuration directory"
+        file:
+            path: /etc/puppetlabs/r10k
+            state: directory
+            mode: 0755
+            owner: root
+            group: root
+      - name: "Create r10k configuration file from template"
+        when: r10k_check.rc == 1
+        template:
+            src: templates/r10k/r10k.yaml.template
+            dest: /etc/puppetlabs/r10k/r10k.yaml
+            owner: root
+            group: root
+            mode: 0644
