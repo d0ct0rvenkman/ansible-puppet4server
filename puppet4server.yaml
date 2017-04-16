@@ -3,6 +3,10 @@
   gather_facts: True
   hosts: puppet4servers
   tasks:
+      - name: Install redhat-lsb
+        yum:
+            name: redhat-lsb
+            state: installed
       - name: Check if puppet yum repositories are installed
         command: rpm -q puppetlabs-release-pc1
         register: yumrepo_check
