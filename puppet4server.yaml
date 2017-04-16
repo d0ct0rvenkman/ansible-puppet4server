@@ -23,6 +23,10 @@
         yum:
             name: git
             state: installed
+      - name: Install rsync
+        yum:
+            name: rsync
+            state: installed
       - name: Install python2-pip
         yum:
             name: python2-pip
@@ -161,16 +165,20 @@
             dest: /etc/puppetlabs/puppetdb/conf.d/jetty.ini
             regexp: '^(#\s*)?port\s*=\s*.*'
             line: 'port = 8080'
-      - name: Check if puppetdb's SSL certs have been created
-        command: test -f /etc/puppetlabs/puppetdb/ssl/private.pem
+      - name: Check if puppet's SSL certs have been created
+        command: test -f /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem
         register: pdbssl_check
         failed_when: pdbssl_check.rc > 1
       - name: Start puppetserver to generate SSL certs
-        command: service puppetserver start
         when: pdbssl_check.rc == 1
+        service:
+            name: puppetserver
+            state: started
       - name: Stop puppetserver
-        command: service puppetserver stop
         when: pdbssl_check.rc == 1
+        service:
+            name: puppetserver
+            state: stopped
       - name: Initialize puppetdb SSL certs
         command: /opt/puppetlabs/bin/puppetdb ssl-setup
         when: pdbssl_check.rc == 1
