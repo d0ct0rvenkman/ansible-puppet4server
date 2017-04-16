@@ -8,6 +8,26 @@
         register: yumrepo_check
         failed_when: yumrepo_check.rc > 1
         changed_when: no
+      - name: Install git
+        yum:
+            name: git
+            state: installed
+      - name: Install python2-pip
+        yum:
+            name: python2-pip
+            state: installed
+      - name: Install nginx
+        yum:
+            name: nginx
+            state: installed
+      - name: Install uwsgi
+        yum:
+            name: uwsgi
+            state: installed
+      - name: Install uwsgi-plugin-python
+        yum:
+            name: uwsgi-plugin-python
+            state: installed
       - name: Install puppet yum repository
         command: rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
         when: yumrepo_check.stdout.find('is not installed') != -1
@@ -52,6 +72,16 @@
       - name: Disable puppet (for now)
         service:
             name: puppet
+            enabled: no
+            state: stopped
+      - name: Disable nginx (for now)
+        service:
+            name: nginx
+            enabled: no
+            state: stopped
+      - name: Disable uwsgi (for now)
+        service:
+            name: uwsgi
             enabled: no
             state: stopped
       - name: Deploy puppet.conf from template
@@ -134,6 +164,90 @@
       - name: Initialize puppetdb SSL certs
         command: /opt/puppetlabs/bin/puppetdb ssl-setup
         when: pdbssl_check.rc == 1
+      - name: "Create puppetboard SSL directory"
+        file:
+            path: /etc/puppetlabs/puppetboard/ssl/
+            state: directory
+            mode: 0755
+            owner: uwsgi
+            group: uwsgi
+      - name: Copy puppetboard SSL certs
+        command: rsync -avHlx /etc/puppetlabs/puppetdb/ssl/ /etc/puppetlabs/puppetboard/ssl/
+      - name: Fix puppetboard SSL permissions (directory)
+        file:
+            path: /etc/puppetlabs/puppetboard/ssl
+            state: directory
+            mode: 0700
+            owner: uwsgi
+            group: uwsgi
+      - name: Fix puppetboard SSL permissions (public.pem)
+        file:
+            path: /etc/puppetlabs/puppetboard/ssl/public.pem
+            state: file
+            mode: 0600
+            owner: uwsgi
+            group: uwsgi
+      - name: Fix puppetboard SSL permissions (private.pem)
+        file:
+            path: /etc/puppetlabs/puppetboard/ssl/private.pem
+            state: file
+            mode: 0600
+            owner: uwsgi
+            group: uwsgi
+      - name: Install puppetboard module
+        command: pip install puppetboard
+      - name: "Create puppetboard content directory"
+        file:
+            path: /var/www/puppetboard
+            state: directory
+            mode: 0755
+            owner: nginx
+            group: nginx
+      - name: Deploy puppetboard settings file
+        template:
+            src: templates/puppetboard/settings.py.template
+            dest: /var/www/puppetboard/settings.py
+            owner: nginx
+            group: nginx
+            mode: 0644
+      - name: Deploy puppetboard wsgi file
+        template:
+            src: templates/puppetboard/wsgi.py.template
+            dest: /var/www/puppetboard/wsgi.py
+            owner: nginx
+            group: nginx
+            mode: 0644
+      - name: Deploy puppetboard systemd service file
+        template:
+            src: templates/puppetboard/uwsgi-puppetboard.yaml.template
+            dest: /etc/uwsgi.d/puppetboard.yaml
+            owner: uwsgi
+            group: uwsgi
+            mode: 0644
+      - name: Enable/start uwsgi
+        systemd:
+            state: restarted
+            daemon_reload: yes
+            name: uwsgi
+      - name: Deploy puppetboard nginx config
+        template:
+            src: templates/puppetboard/nginx-nginx.conf.template
+            dest: /etc/nginx/nginx.conf
+            owner: root
+            group: root
+            mode: 0644
+      - name: Deploy puppetboard nginx vhost config
+        template:
+            src: templates/puppetboard/nginx-puppetboard.conf.template
+            dest: /etc/nginx/conf.d/puppetboard.conf
+            owner: root
+            group: root
+            mode: 0644
+      - name: Enable/Start nginx
+        service:
+            name: nginx
+            enabled: yes
+            state: started
       - name: Enable/Start puppetdb
         service:
             name: puppetdb
@@ -142,5 +256,10 @@
       - name: Enable/Start puppetserver
         service:
             name: puppetserver
+            enabled: yes
+            state: started
+      - name: Enable/Start puppet agent
+        service:
+            name: puppet
             enabled: yes
             state: started

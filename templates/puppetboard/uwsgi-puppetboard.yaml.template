@@ -1,0 +1,9 @@
+uwsgi:
+    processes: '4'
+    socket: '127.0.0.1:9090'
+    plugins: python
+    wsgi-file: /var/www/puppetboard/wsgi.py
+    uid: puppetdb
+    gid: puppetdb
+    enable-threads: true
+    thunder-lock: true
