@@ -267,7 +267,7 @@
       - name: Install r10k
         command: /opt/puppetlabs/puppet/bin/gem install r10k
       - name: Check if r10k is initialized
-        command: test -d /etc/puppetlabs/r10k
+        command: test -f /etc/puppetlabs/r10k/r10k.yaml
         register: r10k_check
         failed_when: r10k_check.rc > 1
       - name: "Create r10k configuration directory"
