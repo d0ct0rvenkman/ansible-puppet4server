@@ -167,18 +167,24 @@
             line: 'port = 8080'
       - name: Check if puppet's SSL certs have been created
         command: test -f /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem
-        register: pdbssl_check
-        failed_when: pdbssl_check.rc > 1
+        register: puppssl_check
+        failed_when: puppssl_check.rc > 1
       - name: Start puppetserver to generate SSL certs
-        when: pdbssl_check.rc == 1
+        when: puppssl_check.rc == 1
         service:
             name: puppetserver
             state: started
       - name: Stop puppetserver
-        when: pdbssl_check.rc == 1
+        when: puppssl_check.rc == 1
         service:
             name: puppetserver
             state: stopped
+      - name: Check again if puppet's SSL certs have been created
+        command: test -f /etc/puppetlabs/puppet/ssl/ca/ca_crt.pem
+      - name: Check if puppetdb's SSL certs have been populated
+        command: test -f /etc/puppetlabs/puppetdb/ssl/ca/ca_crt.pem
+        register: pdbssl_check
+        failed_when: pdbssl_check.rc > 1
       - name: Initialize puppetdb SSL certs
         command: /opt/puppetlabs/bin/puppetdb ssl-setup
         when: pdbssl_check.rc == 1
