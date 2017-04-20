@@ -5,7 +5,7 @@
 
 ## Prerequisites
 * A clean CentOS 7 install with at least 3GB of RAM allocated.
-* * `puppetserver`'s configuration defaults to starting with a 2GB java heap size, and having an insufficient amount of RAM will prevent it from starting. It can be adjusted downwards after it's installed, but trying to modify it while the playbook is running is dicey.
+ * `puppetserver`'s configuration defaults to starting with a 2GB java heap size, and having an insufficient amount of RAM will prevent it from starting. It can be adjusted downwards after it's installed, but trying to modify it while the playbook is running is dicey.
 * Ansible installed and in working order on a separate host/workstation with a properly populated inventory
 
 ## Usage
